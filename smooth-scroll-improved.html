@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smooth Scroll Fixed - La Versión Mejorada</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: auto;
+      overflow-x: hidden;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      background: #0a0a0a;
+      color: white;
+    }
+
+    /* ============================================
+       SMOOTH SCROLL CONTAINER
+    ============================================ */
+    #smooth-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      pointer-events: none; /* Permitir interacciones normales */
+      z-index: 1;
+    }
+
+    #smooth-content {
+      will-change: transform;
+      position: relative;
+      pointer-events: auto; /* Restaurar interacciones */
+    }
+
+    /* ============================================
+       SCROLL PROGRESS BAR
+    ============================================ */
+    .scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background: linear-gradient(to right, #667eea, #764ba2);
+      transform-origin: 0%;
+      z-index: 10000;
+      width: 100%;
+      transition: opacity 0.3s ease;
+      transform: scaleX(0);
+      transform-origin: left;
+    }
+
+    /* ============================================
+       NAVBAR WITH FADE SHADOW
+    ============================================ */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      padding: 1.5rem 0;
+      transition: padding 0.3s ease, background 0.3s ease;
+    }
+
+    .navbar.scrolled {
+      padding: 1rem 0;
+      background: rgba(10, 10, 10, 0.1);
+      backdrop-filter: blur(20px);
+    }
+
+    /* Fade shadow effect - desvanece el contenido debajo */
+    .navbar::after {
+      content: '';
+      position: absolute;
+      bottom: -60px;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(to bottom, rgba(10, 10, 10, 0.1) 0%, transparent 100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .navbar.scrolled::after {
+      opacity: 1;
+    }
+
+    .navbar-brand {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: white;
+      text-decoration: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .navbar-brand:hover {
+      opacity: 0.8;
+      color: white;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s ease;
+      position: relative;
+    }
+
+    .nav-links a:hover {
+      color: white;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(to right, #667eea, #764ba2);
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    /* Mobile menu toggle */
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        position: fixed;
+        top: 70px;
+        right: -100%;
+        flex-direction: column;
+        background: rgba(10, 10, 10, 0.1);
+        backdrop-filter: blur(8px);
+        padding: 2rem;
+        border-radius: 20px 0 0 20px;
+        transition: right 0.3s ease;
+        gap: 1.5rem;
+      }
+
+      .nav-links.active {
+        right: 0;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
+    }
+
+    /* ============================================
+       SECTIONS BASE
+    ============================================ */
+    section,
+    #hero {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 8rem 1.5rem 4rem;
+    }
+
+    /* ============================================
+       HERO
+    ============================================ */
+    .hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      text-align: center;
+      height: 100vh;
+    }
+
+    .hero-title {
+      font-size: clamp(3rem, 10vw, 7rem);
+      font-weight: 900;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.2rem, 3vw, 2rem);
+      opacity: 0.9;
+      max-width: 800px;
+      margin: 0 auto 3rem;
+    }
+
+    .btn-hero {
+      background: white;
+      color: #667eea;
+      padding: 1.2rem 3rem;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      border: none;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: inline-block;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .btn-hero:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      color: #667eea;
+    }
+
+    /* ============================================
+       UKIYO PARALLAX SECTION
+    ============================================ */
+    .parallax-gallery {
+      background: #111;
+      padding: 8rem 0;
+      min-height: 120vh;
+    }
+
+    .parallax-title {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 5rem;
+    }
+
+    .parallax-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    .parallax-item {
+      position: relative;
+      overflow: hidden;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    /* Grid layout - tipo Pinterest/Ukiyo */
+    .parallax-item:nth-child(1) {
+      grid-column: 1 / 6;
+      grid-row: 1 / 3;
+    }
+
+    .parallax-item:nth-child(2) {
+      grid-column: 6 / 10;
+      grid-row: 1 / 2;
+    }
+
+    .parallax-item:nth-child(3) {
+      grid-column: 10 / 13;
+      grid-row: 1 / 3;
+    }
+
+    .parallax-item:nth-child(4) {
+      grid-column: 1 / 6;
+      grid-row: 3 / 4;
+    }
+
+    .parallax-item:nth-child(5) {
+      grid-column: 6 / 10;
+      grid-row: 2 / 4;
+    }
+
+    .parallax-item:nth-child(6) {
+      grid-column: 10 / 13;
+      grid-row: 3 / 4;
+    }
+
+    .parallax-item-inner {
+      width: 100%;
+      height: 100%;
+      min-height: 300px;
+      overflow: hidden;
+      border-radius: 20px;
+    }
+
+    .parallax-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      will-change: transform;
+      transform: scale(1.2);
+      /* Pre-scale para el parallax */
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .parallax-item:hover .parallax-img {
+      transform: scale(1.25);
+    }
+
+    @media (max-width: 968px) {
+      .parallax-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .parallax-item {
+        grid-column: 1 / -1 !important;
+        grid-row: auto !important;
+      }
+
+      .parallax-item-inner {
+        min-height: 250px;
+      }
+    }
+
+    /* ============================================
+       HORIZONTAL SCROLL PINNING - TRABAJOS
+    ============================================ */
+    .works-section {
+      background: #222;
+      padding: 0;
+      height: auto;
+      overflow: hidden;
+    }
+
+    .works-pin-container {
+      position: relative;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .works-sticky {
+      position: -webkit-sticky; /* Safari */
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      z-index: 5;
+    }
+
+    .works-horizontal-wrapper {
+      display: flex;
+      will-change: transform;
+      gap: 3rem;
+      padding: 0 5vw;
+      align-items: center;
+      height: 100vh;
+      width: max-content;
+    }
+
+    .works-intro {
+      min-width: 40vw;
+      display: flex;
+      align-items: center;
+      padding-right: 5vw;
+    }
+
+    .works-intro h2 {
+      font-size: clamp(3rem, 7vw, 6rem);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 2rem;
+    }
+
+    .works-intro p {
+      font-size: 1.3rem;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    .work-card {
+      min-width: 500px;
+      max-width: 500px;
+      height: 600px;
+      background: #1a1a1a;
+      border-radius: 30px;
+      overflow: hidden;
+      position: relative;
+      transition: transform 0.4s ease;
+      flex-shrink: 0;
+    }
+
+    .work-card:hover {
+      transform: scale(1.02);
+    }
+
+    .work-card-img {
+      width: 100%;
+      height: 70%;
+      object-fit: cover;
+    }
+
+    .work-card-content {
+      padding: 2rem;
+      height: 30%;
+    }
+
+    .work-card-content h3 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+    }
+
+    .work-card-content p {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 1rem;
+    }
+
+    .work-tags {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .work-tag {
+      background: rgba(102, 126, 234, 0.2);
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+    }
+
+    @media (max-width: 768px) {
+      .works-intro {
+        min-width: 80vw;
+      }
+
+      .work-card {
+        min-width: 85vw;
+        max-width: 85vw;
+        height: 500px;
+      }
+    }
+
+    /* ============================================
+       FEATURES SECTION
+    ============================================ */
+    .features {
+      background: #111;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 3rem 2rem;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.3s ease, background 0.3s ease;
+      height: 100%;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-10px);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .feature-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    .feature-card p {
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    /* ============================================
+       STATS SECTION
+    ============================================ */
+    .stats {
+      background: linear-gradient(135deg, #5f2d94 0%, #f5579b 100%);
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .stat-number {
+      font-size: clamp(3rem, 8vw, 5rem);
+      font-weight: 900;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+
+    /* ============================================
+       TESTIMONIALS
+    ============================================ */
+    .testimonials {
+      background: #1a1a1a;
+    }
+
+    .testimonial-card {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 20px;
+      padding: 3rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      height: 100%;
+    }
+
+    .testimonial-text {
+      font-size: 1.3rem;
+      line-height: 1.8;
+      margin-bottom: 2rem;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .author-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    .author-info h5 {
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .author-info p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.9rem;
+    }
+
+    /* ============================================
+       CTA SECTION
+    ============================================ */
+    .cta {
+      background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+      text-align: center;
+    }
+
+    .cta h2 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 900;
+      margin-bottom: 1.5rem;
+    }
+
+    .cta p {
+      font-size: 1.3rem;
+      margin-bottom: 2.5rem;
+      opacity: 0.9;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ============================================
+       CONTACT SECTION
+    ============================================ */
+    .contact {
+      background: #0a0a0a;
+      min-height: 80vh;
+    }
+
+    .contact-form {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .form-control {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: white;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      font-size: 1rem;
+    }
+
+    .form-control:focus {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: #667eea;
+      color: white;
+      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+      outline: none;
+    }
+
+    .form-control::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 150px;
+    }
+
+    /* ============================================
+       FOOTER
+    ============================================ */
+    footer {
+      background: #000;
+      padding: 3rem 0;
+      text-align: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    footer p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* ============================================
+       ANIMATIONS
+    ============================================ */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(60px);
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .fade-in-scale {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+
+    .fade-in-scale.visible {
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    /* Stagger delays */
+    .fade-in:nth-child(1).visible {
+      transition-delay: 0s;
+    }
+
+    .fade-in:nth-child(2).visible {
+      transition-delay: 0.1s;
+    }
+
+    .fade-in:nth-child(3).visible {
+      transition-delay: 0.2s;
+    }
+
+    .fade-in:nth-child(4).visible {
+      transition-delay: 0.3s;
+    }
+
+    .fade-in:nth-child(5).visible {
+      transition-delay: 0.4s;
+    }
+
+    .fade-in:nth-child(6).visible {
+      transition-delay: 0.5s;
+    }
+
+    /* Section titles */
+    .section-title {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 900;
+      margin-bottom: 3rem;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Scroll Progress Bar -->
+  <div class="scroll-progress" id="progress-bar"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="container d-flex justify-content-between align-items-center">
+      <a href="#" class="navbar-brand">Fixed</a>
+      <button class="menu-toggle" id="menu-toggle">
+        ☰
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#hero">Inicio</a></li>
+        <li><a href="#services">Servicios</a></li>
+        <li><a href="#works">Trabajos</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#contact">Contacto</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Smooth Wrapper -->
+  <div id="smooth-wrapper">
+    <div id="smooth-content">
+
+      <!-- Hero Section -->
+      <header class="hero" id="hero">
+        <div class="container">
+          <div class="row">
+            <div class="col-12">
+              <h1 class="hero-title fade-in">Smooth Scroll Ultimate</h1>
+              <p class="hero-subtitle fade-in">La versión definitiva: barra de progreso + parallax images + scroll pinning horizontal + formulario contacto + fade shadow navbar</p>
+              <button class="btn-hero fade-in" onclick="document.querySelector('#services').scrollIntoView({behavior: 'smooth'})">
+                Explorar ↓
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Parallax Gallery -->
+      <section class="parallax-gallery" id="services">
+        <h2 class="parallax-title fade-in">Servicios en formato <br> Parallax Gallery</h2>
+        <div class="parallax-grid">
+          <div class="parallax-item fade-in-scale" data-parallax-speed="0.5">
+            <div class="parallax-item-inner">
+              <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=1000&fit=crop"
+                alt="Parallax 1"
+                class="parallax-img"
+                data-parallax-img>
+            </div>
+          </div>
+
+          <div class="parallax-item fade-in-scale" data-parallax-speed="0.3">
+            <div class="parallax-item-inner">
+              <img src="https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?w=800&h=600&fit=crop"
+                alt="Parallax 2"
+                class="parallax-img"
+                data-parallax-img>
+            </div>
+          </div>
+
+          <div class="parallax-item fade-in-scale" data-parallax-speed="0.7">
+            <div class="parallax-item-inner">
+              <img src="https://images.unsplash.com/photo-1618004912476-29818d81ae2e?w=600&h=1000&fit=crop"
+                alt="Parallax 3"
+                class="parallax-img"
+                data-parallax-img>
+            </div>
+          </div>
+
+          <div class="parallax-item fade-in-scale" data-parallax-speed="0.4">
+            <div class="parallax-item-inner">
+              <img src="https://images.unsplash.com/photo-1547658719-da2b51169166?w=700&h=500&fit=crop"
+                alt="Parallax 4"
+                class="parallax-img"
+                data-parallax-img>
+            </div>
+          </div>
+
+          <div class="parallax-item fade-in-scale" data-parallax-speed="0.6">
+            <div class="parallax-item-inner">
+              <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=900&fit=crop"
+                alt="Parallax 5"
+                class="parallax-img"
+                data-parallax-img>
+            </div>
+          </div>
+
+          <div class="parallax-item fade-in-scale" data-parallax-speed="0.35">
+            <div class="parallax-item-inner">
+              <img src="https://images.unsplash.com/photo-1557821552-17105176677c?w=600&h=500&fit=crop"
+                alt="Parallax 6"
+                class="parallax-img"
+                data-parallax-img>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Horizontal Scroll Pinning - Trabajos Seleccionados -->
+      <section class="works-section" id="works">
+        <div class="works-pin-container" id="works-pin-container">
+          <div class="works-sticky">
+            <div class="works-horizontal-wrapper" id="works-horizontal">
+
+              <!-- Intro -->
+              <div class="works-intro">
+                <div>
+                  <h2>Trabajos<br>Seleccionados</h2>
+                  <p>Proyectos destacados con scroll horizontal. La sección se mantiene fija mientras scrolleas lateralmente.</p>
+                </div>
+              </div>
+
+              <!-- Work Cards -->
+              <div class="work-card">
+                <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop"
+                  alt="Proyecto 1"
+                  class="work-card-img">
+                <div class="work-card-content">
+                  <h3>Dashboard Analytics</h3>
+                  <p>Plataforma de visualización de datos en tiempo real</p>
+                  <div class="work-tags">
+                    <span class="work-tag">React</span>
+                    <span class="work-tag">D3.js</span>
+                    <span class="work-tag">Node.js</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="work-card">
+                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop"
+                  alt="Proyecto 2"
+                  class="work-card-img">
+                <div class="work-card-content">
+                  <h3>SaaS Platform</h3>
+                  <p>Aplicación empresarial multi-tenant</p>
+                  <div class="work-tags">
+                    <span class="work-tag">Vue.js</span>
+                    <span class="work-tag">Laravel</span>
+                    <span class="work-tag">AWS</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="work-card">
+                <img src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&h=600&fit=crop"
+                  alt="Proyecto 3"
+                  class="work-card-img">
+                <div class="work-card-content">
+                  <h3>App Móvil</h3>
+                  <p>Aplicación nativa para iOS y Android</p>
+                  <div class="work-tags">
+                    <span class="work-tag">React Native</span>
+                    <span class="work-tag">Firebase</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="work-card">
+                <img src="https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=800&h=600&fit=crop"
+                  alt="Proyecto 4"
+                  class="work-card-img">
+                <div class="work-card-content">
+                  <h3>E-commerce Custom</h3>
+                  <p>Tienda online con diseño personalizado</p>
+                  <div class="work-tags">
+                    <span class="work-tag">Shopify</span>
+                    <span class="work-tag">Liquid</span>
+                    <span class="work-tag">JS</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="work-card">
+                <img src="https://images.unsplash.com/photo-1547658719-da2b51169166?w=800&h=600&fit=crop"
+                  alt="Proyecto 5"
+                  class="work-card-img">
+                <div class="work-card-content">
+                  <h3>Branding Completo</h3>
+                  <p>Identidad visual desde cero</p>
+                  <div class="work-tags">
+                    <span class="work-tag">Figma</span>
+                    <span class="work-tag">Ilustrator</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features Section -->
+      <section class="features" id="features">
+        <div class="container">
+          <div class="row mb-5">
+            <div class="col-12 text-center">
+              <h2 class="section-title fade-in">Features Premium</h2>
+              <p class="lead fade-in" style="color: rgba(255,255,255,0.7);">Lo mejor de ambas versiones combinado</p>
+            </div>
+          </div>
+          <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+              <div class="feature-card fade-in">
+                <div class="feature-icon">🚀</div>
+                <h3>Smooth Scroll Fino</h3>
+                <p>Sistema de la versión native con control directo de wheel/touch events y clamping preciso.</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="feature-card fade-in">
+                <div class="feature-icon">📊</div>
+                <h3>Progress Bar</h3>
+                <p>Barra de progreso animada en la parte superior que refleja tu posición en la página.</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="feature-card fade-in">
+                <div class="feature-icon">🎨</div>
+                <h3>Parallax Ukiyo</h3>
+                <p>Efecto parallax en imágenes tipo ukiyo.js pero usando solo Motion One.</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="feature-card fade-in">
+                <div class="feature-icon">↔️</div>
+                <h3>Scroll Pinning</h3>
+                <p>Sección de trabajos con scroll horizontal mientras está pinned, luego continúa vertical.</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="feature-card fade-in">
+                <div class="feature-icon">🌫️</div>
+                <h3>Fade Shadow Navbar</h3>
+                <p>Navbar con sombreado que desvanece el contenido que scrollea hacia arriba.</p>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="feature-card fade-in">
+                <div class="feature-icon">📱</div>
+                <h3>Formulario Contacto</h3>
+                <p>Formulario completo integrado, listo para conectar a tu backend.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stats Section -->
+      <section class="stats">
+        <div class="container">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="stat-item fade-in">
+                <span class="stat-number">60</span>
+                <span class="stat-label">FPS Constantes</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="stat-item fade-in">
+                <span class="stat-number">3.8</span>
+                <span class="stat-label">KB de Motion One</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="stat-item fade-in">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">Vanilla JS</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Testimonials Section -->
+      <section class="testimonials">
+        <div class="container">
+          <div class="row mb-5">
+            <div class="col-12 text-center">
+              <h2 class="section-title fade-in">Testimonios</h2>
+            </div>
+          </div>
+          <div class="row g-4">
+            <div class="col-md-6">
+              <div class="testimonial-card fade-in">
+                <p class="testimonial-text">"El smooth scroll más fino que he probado. El efecto parallax tipo ukiyo es increíble."</p>
+                <div class="testimonial-author">
+                  <div class="author-avatar"></div>
+                  <div class="author-info">
+                    <h5>María García</h5>
+                    <p>Creative Director</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="testimonial-card fade-in">
+                <p class="testimonial-text">"El horizontal scroll pinning es exactamente lo que necesitaba para mi portfolio."</p>
+                <div class="testimonial-author">
+                  <div class="author-avatar"></div>
+                  <div class="author-info">
+                    <h5>Carlos Rodríguez</h5>
+                    <p>Frontend Developer</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA Section -->
+      <section class="cta">
+        <div class="container">
+          <div class="row">
+            <div class="col-12">
+              <h2 class="fade-in">¿Listo para implementar?</h2>
+              <p class="fade-in">La versión definitiva con todo incluido</p>
+              <button class="btn-hero fade-in" onclick="document.querySelector('#contact').scrollIntoView({behavior: 'smooth'})">
+                Contactar Ahora
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contact Section -->
+      <section id="contact" class="contact">
+        <div class="container">
+          <div class="row mb-5">
+            <div class="col-12 text-center">
+              <h2 class="section-title fade-in">Contacto</h2>
+              <p class="lead fade-in" style="color: rgba(255,255,255,0.7);">¿Tienes un proyecto en mente?</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12">
+              <form class="contact-form fade-in" id="contact-form">
+                <input type="text" class="form-control" placeholder="Tu Nombre" required>
+                <input type="email" class="form-control" placeholder="Email" required>
+                <input type="text" class="form-control" placeholder="Asunto">
+                <textarea class="form-control" rows="5" placeholder="Mensaje" required></textarea>
+                <button type="submit" class="btn-hero w-100">Enviar Mensaje</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer>
+        <div class="container">
+          <div>&copy; 2026 Xtencil. All Rights Reserved.</div>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <!-- Motion One -->
+  <script type="module">
+    import {
+      animate,
+      scroll,
+      inView
+    } from 'https://cdn.jsdelivr.net/npm/motion@12.29.2/+esm';
+
+    // ============================================
+    // CONFIGURATION
+    // ============================================
+    const CONFIG = {
+      smoothScroll: {
+        lerp: 0.1, // Lower = smoother (0.05-0.2)
+        wheelMultiplier: 1, // Mouse wheel speed
+        touchMultiplier: 2, // Touch scroll speed
+      },
+      parallax: {
+        strength: 30, // Parallax distance in pixels
+      },
+      horizontalScroll: {
+        distance: null, // Calculated dynamically
+      }
+    };
+
+    // ============================================
+    // SMOOTH SCROLL ENGINE (Native version - mejor sensación)
+    // ============================================
+    class SmoothScroll {
+      constructor() {
+        this.wrapper = document.getElementById('smooth-wrapper');
+        this.content = document.getElementById('smooth-content');
+        this.height = 0;
+        this.scrollY = 0;
+        this.targetY = 0;
+        this.currentY = 0;
+        this.raf = null;
+
+        this.worksSection = document.getElementById('works');
+        this.worksPinContainer = document.getElementById('works-pin-container');
+        this.worksHorizontalWrapper = document.getElementById('works-horizontal');
+        
+        this.isInHorizontalSection = false;
+        this.horizontalScrollProgress = 0;
+
+        this.init();
+      }
+
+      init() {
+        this.setHeight();
+        this.setupListeners();
+        this.render();
+
+        setTimeout(() => this.animateOnScroll(), 100);
+
+        console.log('✅ Smooth scroll initialized (native version)');
+      }
+
+      setHeight() {
+        this.height = this.content.offsetHeight;
+        document.body.style.height = `${this.height}px`;
+      }
+
+      setupListeners() {
+        // Resize observer
+        const resizeObserver = new ResizeObserver(() => this.setHeight());
+        resizeObserver.observe(this.content);
+
+        // Mouse wheel
+        window.addEventListener('wheel', (e) => {
+          // Check if we're in the horizontal section
+          this.checkHorizontalSection();
+          
+          if (this.isInHorizontalSection) {
+            // Handle horizontal scrolling differently
+            this.handleHorizontalScroll(e);
+          } else {
+            this.targetY += e.deltaY * CONFIG.smoothScroll.wheelMultiplier;
+            this.clampTarget();
+          }
+        }, {
+          passive: false
+        });
+
+        // Touch events
+        let touchStart = 0;
+        let lastTouchY = 0;
+        
+        window.addEventListener('touchstart', (e) => {
+          touchStart = e.touches[0].clientY;
+          lastTouchY = touchStart;
+        }, {
+          passive: true
+        });
+
+        window.addEventListener('touchmove', (e) => {
+          const touchY = e.touches[0].clientY;
+          const delta = lastTouchY - touchY;
+          lastTouchY = touchY;
+          
+          // Check if we're in the horizontal section
+          this.checkHorizontalSection();
+          
+          if (this.isInHorizontalSection) {
+            // Handle horizontal touch scrolling
+            this.handleHorizontalScroll({deltaY: delta});
+          } else {
+            this.targetY += delta * CONFIG.smoothScroll.touchMultiplier;
+            this.clampTarget();
+          }
+        }, {
+          passive: false
+        });
+
+        // Keyboard navigation
+        window.addEventListener('keydown', (e) => {
+          switch (e.key) {
+            case 'ArrowDown':
+              this.targetY += 100;
+              break;
+            case 'ArrowUp':
+              this.targetY -= 100;
+              break;
+            case 'PageDown':
+              this.targetY += window.innerHeight;
+              break;
+            case 'PageUp':
+              this.targetY -= window.innerHeight;
+              break;
+            case 'Home':
+              this.targetY = 0;
+              break;
+            case 'End':
+              this.targetY = this.height - window.innerHeight;
+              break;
+          }
+          this.clampTarget();
+        });
+      }
+
+      checkHorizontalSection() {
+        const worksRect = this.worksPinContainer.getBoundingClientRect();
+        const viewportTop = 0;
+        const viewportBottom = window.innerHeight;
+        
+        // Check if the works section is in the viewport
+        this.isInHorizontalSection = worksRect.top <= viewportBottom && worksRect.bottom >= viewportTop;
+      }
+
+      handleHorizontalScroll(event) {
+        // Prevent default scroll behavior when in horizontal section
+        event.preventDefault();
+        
+        // Calculate the horizontal scroll distance
+        const totalWidth = this.worksHorizontalWrapper.scrollWidth - window.innerWidth;
+        const scrollAmount = event.deltaY || (event.movementY || 0);
+        
+        // Update the horizontal scroll progress
+        this.horizontalScrollProgress += scrollAmount * 0.001;
+        this.horizontalScrollProgress = Math.max(0, Math.min(1, this.horizontalScrollProgress));
+        
+        // Apply horizontal transformation
+        const translateX = -(this.horizontalScrollProgress * totalWidth);
+        this.worksHorizontalWrapper.style.transform = `translate3d(${translateX}px, 0, 0)`;
+      }
+
+      clampTarget() {
+        const maxScroll = this.height - window.innerHeight;
+        this.targetY = Math.max(0, Math.min(this.targetY, maxScroll));
+      }
+
+      render() {
+        // Lerp (linear interpolation)
+        this.currentY += (this.targetY - this.currentY) * CONFIG.smoothScroll.lerp;
+        this.scrollY = this.currentY;
+
+        // Apply transform
+        this.content.style.transform = `translate3d(0, ${-this.currentY}px, 0)`;
+
+        // Trigger scroll animations
+        this.animateOnScroll();
+
+        // Update parallax images
+        this.updateParallax();
+
+        // Continue loop
+        this.raf = requestAnimationFrame(() => this.render());
+      }
+
+      animateOnScroll() {
+        const elements = document.querySelectorAll('.fade-in, .fade-in-scale');
+        const windowHeight = window.innerHeight;
+
+        elements.forEach(el => {
+          const rect = el.getBoundingClientRect();
+          if (rect.top < windowHeight * 0.8 && rect.top > -rect.height) {
+            el.classList.add('visible');
+          }
+        });
+      }
+
+      updateParallax() {
+        const parallaxImages = document.querySelectorAll('[data-parallax-img]');
+        const windowHeight = window.innerHeight;
+
+        parallaxImages.forEach(img => {
+          const parent = img.closest('[data-parallax-speed]');
+          if (!parent) return;
+
+          const speed = parseFloat(parent.dataset.parallaxSpeed) || 0.5;
+          const rect = parent.getBoundingClientRect();
+
+          // Only animate when in viewport
+          if (rect.top < windowHeight && rect.bottom > 0) {
+            const progress = (windowHeight - rect.top) / (windowHeight + rect.height);
+            const yOffset = -(progress - 0.5) * CONFIG.parallax.strength * speed;
+
+            img.style.transform = `scale(1.2) translateY(${yOffset}px)`;
+          }
+        });
+      }
+
+      destroy() {
+        cancelAnimationFrame(this.raf);
+      }
+    }
+
+    // ============================================
+    // SCROLL PROGRESS BAR
+    // ============================================
+    const progressBar = document.getElementById('progress-bar');
+
+    // Using Motion One for the progress bar
+    scroll(
+      animate(progressBar, {
+        scaleX: [0, 1]
+      }), {
+        target: document.documentElement,
+        offset: ['start start', 'end end']
+      }
+    );
+
+    // ============================================
+    // NAVBAR SCROLL EFFECT
+    // ============================================
+    const navbar = document.getElementById('navbar');
+    let lastScroll = 0;
+
+    window.addEventListener('scroll', () => {
+      const currentScroll = window.pageYOffset;
+
+      if (currentScroll > 100) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+
+      lastScroll = currentScroll;
+    });
+
+    // ============================================
+    // MOBILE MENU TOGGLE
+    // ============================================
+    const menuToggle = document.getElementById('menu-toggle');
+    const navLinks = document.getElementById('nav-links');
+
+    menuToggle.addEventListener('click', () => {
+      navLinks.classList.toggle('active');
+    });
+
+    // Close menu when clicking a link
+    navLinks.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('active');
+      });
+    });
+
+    // ============================================
+    // FORM SUBMISSION
+    // ============================================
+    document.getElementById('contact-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      alert('¡Formulario enviado! (Conecta tu backend aquí)');
+      e.target.reset();
+    });
+
+    // ============================================
+    // CHECK FOR REDUCED MOTION
+    // ============================================
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      console.log('⚠️ Reduced motion preferred');
+      document.getElementById('smooth-wrapper').style.position = 'static';
+      document.getElementById('smooth-wrapper').style.height = 'auto';
+      document.getElementById('smooth-wrapper').style.overflow = 'visible';
+      document.body.style.height = 'auto';
+
+      // Still trigger animations on native scroll
+      window.addEventListener('scroll', () => {
+        const elements = document.querySelectorAll('.fade-in, .fade-in-scale');
+        const windowHeight = window.innerHeight;
+
+        elements.forEach(el => {
+          const rect = el.getBoundingClientRect();
+          if (rect.top < windowHeight * 0.8) {
+            el.classList.add('visible');
+          }
+        });
+      });
+    } else {
+      // Initialize smooth scroll
+      const smoothScroll = new SmoothScroll();
+    }
+    console.log('✨ Smooth Scroll Ultimate initialized');
+  </script>
+
+</body>
+
+</html>
